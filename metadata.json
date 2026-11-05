@@ -1,0 +1,6 @@
+{
+  "name": "CompShare - Electronic Components Converter & Host Library",
+  "description": "Cross-platform electronic component library and multi-format CAD converter with 3D model preview, schematic symbol viewer, and engineer community.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

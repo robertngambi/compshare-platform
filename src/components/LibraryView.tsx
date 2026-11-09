@@ -5,6 +5,7 @@ import { ElectronicComponent } from '../types';
 interface LibraryViewProps {
   title: string;
   isMyLibrary: boolean;
+  isAdmin?: boolean;
   components: ElectronicComponent[];
   selectedComponentId: string | null;
   onSelectComponent: (comp: ElectronicComponent) => void;
@@ -18,6 +19,7 @@ interface LibraryViewProps {
 export const LibraryView: React.FC<LibraryViewProps> = ({
   title,
   isMyLibrary,
+  isAdmin = false,
   components,
   selectedComponentId,
   onSelectComponent,
@@ -114,11 +116,20 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   </span>
                 </div>
 
-                {/* Right side: View button exclusively */}
+                {/* Right side: Edit & View buttons */}
                 <div
                   className="flex items-center gap-2 shrink-0"
                   onClick={e => e.stopPropagation()}
                 >
+                  {(isMyLibrary || isAdmin) && onOpenManageModal && (
+                    <button
+                      onClick={() => onOpenManageModal(comp)}
+                      className="px-3.5 py-1 bg-white hover:bg-blue-50 active:bg-blue-100 border border-blue-400 text-blue-700 text-xs font-semibold rounded-full shadow-xs transition cursor-pointer flex items-center gap-1"
+                      title={isAdmin && !isMyLibrary ? "Admin Edit Access" : "Edit Component Details"}
+                    >
+                      Edit
+                    </button>
+                  )}
                   <button
                     onClick={() => onOpenViewModal(comp)}
                     className="px-5 py-1 bg-[#eed3be] hover:bg-[#e6c4ab] active:bg-[#dbb599] border border-gray-400 text-gray-800 text-xs font-semibold rounded-full shadow-xs transition cursor-pointer"

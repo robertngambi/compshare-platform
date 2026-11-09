@@ -49,19 +49,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
               </div>
             )}
 
-            {/* Message Bubble: concentrated to left or right */}
+            {/* Message Bubble: concentrated to left or right, with increased sideways width */}
             {msg.isCurrentUser ? (
               /* User Sent Bubble: strictly concentrated to the RIGHT side */
               <div className="flex justify-end">
-                <div className="max-w-[85%] sm:max-w-md bg-[#a3d977] text-[#1e4811] rounded-2xl rounded-tr-xs p-3 shadow-xs relative border border-[#91c964]">
+                <div className="w-[92%] sm:w-[86%] md:w-[80%] max-w-2xl bg-[#a3d977] text-[#1e4811] rounded-2xl rounded-tr-xs p-3.5 sm:p-4 shadow-xs relative border border-[#91c964]">
                   {/* Quoted Reply Header if any */}
                   {msg.replyTo && (
-                    <div className="mb-1.5 p-1.5 bg-[#92ca65]/60 rounded-lg text-[11px] border-l-2 border-[#285718]">
+                    <div className="mb-2 p-2 bg-[#92ca65]/60 rounded-lg text-xs border-l-2 border-[#285718]">
                       <div className="flex items-center gap-1 font-bold text-[#1a3f0e] mb-0.5">
-                        <User className="w-3 h-3" />
+                        <User className="w-3.5 h-3.5" />
                         {msg.replyTo.authorName}
                       </div>
-                      <p className="line-clamp-1 italic text-[#245214]">
+                      <p className="line-clamp-2 italic text-[#245214]">
                         {msg.replyTo.text}
                       </p>
                     </div>
@@ -73,7 +73,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   </p>
 
                   {/* Message Bottom: Time & Reactions */}
-                  <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-[#8fc862]/50 text-[10px]">
+                  <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[#8fc862]/50 text-[11px]">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onReact(msg.id, 'heart')}
@@ -90,33 +90,33 @@ export const ChatView: React.FC<ChatViewProps> = ({
             ) : (
               /* Received Message Bubble: strictly concentrated to the LEFT side */
               <div className="flex justify-start">
-                <div className="max-w-[85%] sm:max-w-md bg-[#dedede] text-gray-800 rounded-2xl rounded-tl-xs p-3 shadow-xs border border-gray-300">
+                <div className="w-[92%] sm:w-[86%] md:w-[80%] max-w-2xl bg-[#dedede] text-gray-800 rounded-2xl rounded-tl-xs p-3.5 sm:p-4 shadow-xs border border-gray-300">
                   {/* Author Header */}
-                  <div className="flex items-center justify-between mb-1 gap-2">
+                  <div className="flex items-center justify-between mb-1.5 gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <div className="w-5 h-5 rounded-full bg-gray-500 flex items-center justify-center text-white text-[10px] shrink-0">
-                        <User className="w-3 h-3" />
+                      <div className="w-6 h-6 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs shrink-0">
+                        <User className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-xs font-bold text-gray-900 truncate">{msg.authorName}</span>
+                      <span className="text-xs sm:text-sm font-bold text-gray-900 truncate">{msg.authorName}</span>
                     </div>
-                    <span className="text-[10px] text-gray-500 font-mono shrink-0">{msg.time}</span>
+                    <span className="text-[11px] text-gray-500 font-mono shrink-0">{msg.time}</span>
                   </div>
 
                   {/* Content */}
-                  <p className="text-xs sm:text-sm text-gray-900 mt-0.5 font-medium break-words">
+                  <p className="text-xs sm:text-sm text-gray-900 mt-1 font-medium leading-relaxed break-words">
                     {msg.content}
                   </p>
 
                   {/* Footer Reactions */}
-                  <div className="flex items-center justify-end gap-3 mt-1.5 pr-1 text-xs">
+                  <div className="flex items-center justify-end gap-3 mt-2 pr-1 text-xs">
                     {/* Reply Counter Icon */}
                     <button
                       onClick={() => setActiveReply({ authorName: msg.authorName, text: msg.content })}
                       className="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition cursor-pointer"
                       title="Reply to this message"
                     >
-                      <Reply className="w-3.5 h-3.5 rotate-180" />
-                      <span className="font-bold text-[10px]">{msg.reactions.replies}</span>
+                      <Reply className="w-4 h-4 rotate-180" />
+                      <span className="font-bold text-[11px]">{msg.reactions.replies}</span>
                     </button>
 
                     {/* Heart Counter */}
@@ -125,8 +125,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       className="flex items-center gap-1 text-gray-600 hover:text-red-600 transition cursor-pointer"
                       title="Like message"
                     >
-                      <Heart className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                      <span className="font-bold text-[10px]">{msg.reactions.heart}</span>
+                      <Heart className="w-4 h-4 text-amber-500 fill-amber-400" />
+                      <span className="font-bold text-[11px]">{msg.reactions.heart}</span>
                     </button>
                   </div>
                 </div>

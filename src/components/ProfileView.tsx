@@ -148,6 +148,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser }) 
               className="w-full px-4 py-2 bg-white border border-gray-400 rounded-full text-sm text-gray-900 shadow-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             />
           </div>
+
+          {/* Account Role Card (Display status only - activated via passcode) */}
+          <div className="p-3.5 bg-gray-50 border border-gray-300 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-800">Account Access Role:</span>
+                <span
+                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                    user.role === 'admin'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {user.role === 'admin' ? '🛡️ Administrator (Active)' : 'Standard User'}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                {user.role === 'admin'
+                  ? 'Active: Unlocks AI Datasheet specifications generator bot and universal Edit on all libraries.'
+                  : 'Standard: View-only access on community libraries; Edit access on personal library.'}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Big Blue SAVE Button */}

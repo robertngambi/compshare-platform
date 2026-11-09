@@ -33,17 +33,27 @@ export const FootprintViewer: React.FC<FootprintViewerProps> = ({ component }) =
     setScale(prev => Math.max(0.4, Math.min(prev * factor, 3.5)));
   };
 
+  const pkg = component.packageType || 'SOIC-8';
+  const isDip = pkg === 'DIP-8';
+  const isSot = pkg === 'SOT-23-6';
+
   const pads = component.pads && component.pads.length > 0 ? component.pads : [
-    { number: 1, x: -1.3, y: -0.95, width: 1.0, height: 0.6, shape: 'rect' as const, type: 'smd' as const },
-    { number: 2, x: -1.3, y: 0.0, width: 1.0, height: 0.6, shape: 'rect' as const, type: 'smd' as const },
-    { number: 3, x: -1.3, y: 0.95, width: 1.0, height: 0.6, shape: 'rect' as const, type: 'smd' as const },
-    { number: 4, x: 1.3, y: 0.95, width: 1.0, height: 0.6, shape: 'rect' as const, type: 'smd' as const },
-    { number: 5, x: 1.3, y: 0.0, width: 1.0, height: 0.6, shape: 'rect' as const, type: 'smd' as const },
-    { number: 6, x: 1.3, y: -0.95, width: 1.0, height: 0.6, shape: 'rect' as const, type: 'smd' as const },
+    { number: 1, x: -2.7, y: -1.905, width: 1.55, height: 0.65, shape: 'rect' as const, type: 'smd' as const },
+    { number: 2, x: -2.7, y: -0.635, width: 1.55, height: 0.65, shape: 'rect' as const, type: 'smd' as const },
+    { number: 3, x: -2.7, y: 0.635, width: 1.55, height: 0.65, shape: 'rect' as const, type: 'smd' as const },
+    { number: 4, x: -2.7, y: 1.905, width: 1.55, height: 0.65, shape: 'rect' as const, type: 'smd' as const },
+    { number: 5, x: 2.7, y: 1.905, width: 1.55, height: 0.65, shape: 'rect' as const, type: 'smd' as const },
+    { number: 6, x: 2.7, y: 0.635, width: 1.55, height: 0.65, shape: 'rect' as const, type: 'smd' as const },
+    { number: 7, x: 2.7, y: -0.635, width: 1.55, height: 0.65, shape: 'rect' as const, type: 'smd' as const },
+    { number: 8, x: 2.7, y: -1.905, width: 1.55, height: 0.65, shape: 'rect' as const, type: 'smd' as const },
   ];
 
-  // Scale mm to SVG pixels: 1 mm ~ 35px
-  const mmToPx = 36;
+  // Scale factor mm to SVG coordinate units
+  const mmToPx = isDip ? 20 : (isSot ? 42 : 28);
+
+  // Silkscreen dimensions calculated to match the 3D model body outline
+  const bodyHalfW = isDip ? 3.0 * mmToPx : (isSot ? 0.9 * mmToPx : 2.0 * mmToPx);
+  const bodyHalfH = isDip ? 4.8 * mmToPx : (isSot ? 1.5 * mmToPx : 2.6 * mmToPx);
 
   return (
     <div
@@ -71,24 +81,100 @@ export const FootprintViewer: React.FC<FootprintViewerProps> = ({ component }) =
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
         }}
       >
-        <svg width="240" height="200" viewBox="-120 -100 240 200" className="overflow-visible">
-          {/* Silkscreen Top / Bottom Guides matching screenshot cyan bars */}
-          <line x1="-35" y1="-55" x2="35" y2="-55" stroke="#00e5ff" strokeWidth="3" strokeLinecap="round" />
-          <line x1="-35" y1="55" x2="35" y2="55" stroke="#00e5ff" strokeWidth="3" strokeLinecap="round" />
+        <svg width="260" height="220" viewBox="-130 -110 260 220" className="overflow-visible">
+          {/* Silkscreen Layer (Cyan) matching 3D Model Body dimensions & Polarity Notch */}
+          {isDip ? (
+            /* DIP-8 Silkscreen with Top U-Notch */
+            <g stroke="#00e5ff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path
+                d={`M -${bodyHalfW} -${bodyHalfH} 
+                   L -12 -${bodyHalfH} 
+                   A 12 12 0 0 0 12 -${bodyHalfH} 
+                   L ${bodyHalfW} -${bodyHalfH} 
+                   L ${bodyHalfW} ${bodyHalfH} 
+                   L -${bodyHalfW} ${bodyHalfH} Z`}
+              />
+              {/* Pin 1 Polarity Marker Dot */}
+              <circle cx={-bodyHalfW - 12} cy={-bodyHalfH + 12} r="4.5" fill="#00e5ff" stroke="none" />
+              {/* Reference Text */}
+              <text x="0" y="4" fill="#00e5ff" fontSize="11" fontFamily="monospace" textAnchor="middle" stroke="none">
+                U1 ({pkg})
+              </text>
+            </g>
+          ) : (
+            /* SMT Silkscreen (SOIC / SOT) */
+            <g stroke="#00e5ff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              {/* Horizontal Boundary Guides */}
+              <line x1={-bodyHalfW} y1={-bodyHalfH} x2={bodyHalfW} y2={-bodyHalfH} />
+              <line x1={-bodyHalfW} y1={bodyHalfH} x2={bodyHalfW} y2={bodyHalfH} />
+              {/* Chamfer notch at top-left pin 1 corner */}
+              <line x1={-bodyHalfW} y1={-bodyHalfH} x2={-bodyHalfW} y2={-bodyHalfH + 14} />
+              <line x1={bodyHalfW} y1={-bodyHalfH} x2={bodyHalfW} y2={-bodyHalfH + 14} />
+              <line x1={-bodyHalfW} y1={bodyHalfH} x2={-bodyHalfW} y2={bodyHalfH - 14} />
+              <line x1={bodyHalfW} y1={bodyHalfH} x2={bodyHalfW} y2={bodyHalfH - 14} />
 
-          {/* Cyan Pin 1 Polarity Marker Dot */}
-          <circle cx="-65" cy="-35" r="5.5" fill="#00e5ff" />
+              {/* Pin 1 Polarity Dot */}
+              <circle cx={-bodyHalfW - 14} cy={-bodyHalfH + 10} r="4.5" fill="#00e5ff" stroke="none" />
 
-          {/* Red Copper SMD Pads with Pad Numbers */}
+              {/* Reference Designator Text */}
+              <text x="0" y="3.5" fill="#00e5ff" fontSize="10" fontFamily="monospace" textAnchor="middle" stroke="none">
+                {pkg}
+              </text>
+            </g>
+          )}
+
+          {/* Copper Pads with Pad Numbers - matching through-hole or SMD */}
           {pads.map(pad => {
-            const padW = pad.width * mmToPx;
-            const padH = pad.height * mmToPx;
             const px = pad.x * mmToPx;
             const py = pad.y * mmToPx;
 
+            if (pad.type === 'tht' || pad.shape === 'round') {
+              // Plated Through-Hole (THT) pad with copper annular ring and drill hole
+              const radius = (pad.width * mmToPx) / 2;
+              const drillRadius = radius * 0.52;
+
+              return (
+                <g key={`pad-${pad.number}`}>
+                  {/* Outer copper pad */}
+                  <circle
+                    cx={px}
+                    cy={py}
+                    r={radius}
+                    fill="#b91c1c"
+                    stroke="#ef4444"
+                    strokeWidth="1.2"
+                  />
+                  {/* Inner drill hole (black) */}
+                  <circle
+                    cx={px}
+                    cy={py}
+                    r={drillRadius}
+                    fill="#000000"
+                    stroke="#fca5a5"
+                    strokeWidth="0.8"
+                  />
+                  {/* Pad Number in white */}
+                  <text
+                    x={px}
+                    y={py + 3.5}
+                    fontSize="10"
+                    fontFamily="monospace"
+                    fill="#ffffff"
+                    textAnchor="middle"
+                    fontWeight="bold"
+                  >
+                    {pad.number}
+                  </text>
+                </g>
+              );
+            }
+
+            // SMT Rectangular Copper Pad
+            const padW = pad.width * mmToPx;
+            const padH = pad.height * mmToPx;
+
             return (
               <g key={`pad-${pad.number}`}>
-                {/* Pad copper rectangle (deep red matching EDA layout) */}
                 <rect
                   x={px - padW / 2}
                   y={py - padH / 2}
@@ -97,9 +183,8 @@ export const FootprintViewer: React.FC<FootprintViewerProps> = ({ component }) =
                   rx="2"
                   fill="#b91c1c"
                   stroke="#ef4444"
-                  strokeWidth="1"
+                  strokeWidth="1.2"
                 />
-                {/* Pad Number in white */}
                 <text
                   x={px}
                   y={py + 3.5}
@@ -126,14 +211,14 @@ export const FootprintViewer: React.FC<FootprintViewerProps> = ({ component }) =
         <button
           onClick={() => setScale(s => Math.min(s * 1.25, 3.5))}
           title="Zoom In"
-          className="p-1 hover:bg-white/20 rounded transition"
+          className="p-1 hover:bg-white/20 rounded transition cursor-pointer"
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => setScale(s => Math.max(s * 0.8, 0.4))}
           title="Zoom Out"
-          className="p-1 hover:bg-white/20 rounded transition"
+          className="p-1 hover:bg-white/20 rounded transition cursor-pointer"
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </button>
@@ -143,7 +228,7 @@ export const FootprintViewer: React.FC<FootprintViewerProps> = ({ component }) =
             setPan({ x: 0, y: 0 });
           }}
           title="Reset View"
-          className="p-1 hover:bg-white/20 rounded transition"
+          className="p-1 hover:bg-white/20 rounded transition cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
@@ -151,7 +236,7 @@ export const FootprintViewer: React.FC<FootprintViewerProps> = ({ component }) =
       </div>
 
       <div className="absolute top-2 left-2 pointer-events-none text-[10px] font-mono text-cyan-400 bg-black/70 px-1.5 py-0.5 rounded">
-        Drag to pan • Scroll to zoom
+        {pkg} Footprint • Drag to pan • Scroll to zoom
       </div>
     </div>
   );

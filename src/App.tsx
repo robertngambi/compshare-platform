@@ -2,14 +2,17 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   LogIn,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
   X,
   Layers,
   MessageSquare,
   Info as InfoIcon,
   Home as HomeIcon,
+  Menu,
+  ChevronLeft,
+  ChevronDown,
+  ShieldCheck,
+  CheckCircle2,
+  ArrowRight,
 } from 'lucide-react';
 import {
   ElectronicComponent,
@@ -28,14 +31,12 @@ import {
 import {
   detectCADFormat,
   formatFileSize,
-  convertComponentPackage,
   downloadBlob,
   generatePinsForPackage,
   generatePadsForPackage,
 } from './utils/converterEngine';
 import { Sidebar, NavTab } from './components/Sidebar';
 import { TopConvertBar } from './components/TopConvertBar';
-import { ComponentDetailsPane } from './components/ComponentDetailsPane';
 import { NewConvertView } from './components/NewConvertView';
 import { LibraryView } from './components/LibraryView';
 import { ProfileView } from './components/ProfileView';
@@ -103,15 +104,17 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(true);
 
-  // Mobile / Desktop Sidebars Visibility State
+  // Left Sidebar State for mobile & desktop
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isDetailsPaneOpen, setIsDetailsPaneOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Secret Admin passcode toast notification
+  const [adminToast, setAdminToast] = useState<{ message: string; isSuccess: boolean } | null>(null);
+
+  // Auto desktop sidebar visibility
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
       setIsSidebarOpen(true);
-      // Keep details pane closed initially so the '>' button is clearly displayed to access it
-      setIsDetailsPaneOpen(false);
     }
   }, []);
 
@@ -119,8 +122,8 @@ export default function App() {
   useEffect(() => {
     const pulseInterval = setInterval(() => {
       setStats(prev => {
-        const deltaOnline = Math.floor(Math.random() * 5) - 2; // -2 to +2
-        const shouldAddSubscriber = Math.random() < 0.3; // 30% chance of new subscriber
+        const deltaOnline = Math.floor(Math.random() * 5) - 2;
+        const shouldAddSubscriber = Math.random() < 0.3;
         return {
           ...prev,
           online: Math.max(95, Math.min(180, prev.online + deltaOnline)),
@@ -132,11 +135,10 @@ export default function App() {
     return () => clearInterval(pulseInterval);
   }, []);
 
-  // Selected Component for Right Pane
+  // Selected Component helper
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(
     INITIAL_COMPONENTS[0]?.id || null
   );
-
 
   // Modals State
   const [viewingComponent, setViewingComponent] = useState<ElectronicComponent | null>(null);
@@ -200,6 +202,32 @@ export default function App() {
     }
   }, [currentUser.lastLoginTimestamp]);
 
+  // Secret passcode trigger in search bar: typing 'compshare.admin' allows admin access
+  const handleSearchChange = (val: string) => {
+    const clean = val.trim().toLowerCase();
+    if (clean === 'compshare.admin') {
+      setCurrentUser(prev => ({ ...prev, role: 'admin' }));
+      setSearchQuery('');
+      setAdminToast({
+        message: '🛡️ Administrator Access Unlocked! Edit controls and AI Datasheet Assistant are now enabled.',
+        isSuccess: true,
+      });
+      setTimeout(() => setAdminToast(null), 5500);
+      return;
+    }
+    if (clean === 'compshare.admin.off' || clean === 'compshare.user') {
+      setCurrentUser(prev => ({ ...prev, role: 'user' }));
+      setSearchQuery('');
+      setAdminToast({
+        message: 'Standard User Mode restored.',
+        isSuccess: false,
+      });
+      setTimeout(() => setAdminToast(null), 4000);
+      return;
+    }
+    setSearchQuery(val);
+  };
+
   // Guard access to the Converter Platform: First-time users or expired sessions must authenticate first
   const attemptNavigateToPlatform = () => {
     const hasAuth = localStorage.getItem('compshare_authenticated') === 'true';
@@ -208,7 +236,6 @@ export default function App() {
     const elapsed = Date.now() - lastLogin;
 
     if (!hasAuth) {
-      // First-time user needs to sign up (subscribe)
       setAuthGateReason('first_time');
       setPendingPlatformNav(true);
       setIsAuthOpen(true);
@@ -216,7 +243,6 @@ export default function App() {
     }
 
     if (elapsed > SEVEN_DAYS_MS) {
-      // More than 7 days from last visit: prompt sign in (log in)
       setIsAuthenticated(false);
       setAuthGateReason('session_expired');
       setPendingPlatformNav(true);
@@ -224,9 +250,9 @@ export default function App() {
       return;
     }
 
-    // Authenticated within 7 days
     setIsAuthenticated(true);
     setCurrentSection('platform');
+    setIsMobileMenuOpen(false);
   };
 
   const handleLoginSuccess = (user: UserProfile) => {
@@ -245,12 +271,6 @@ export default function App() {
     setAuthGateReason('manual');
     setIsAuthOpen(true);
   };
-
-
-  // Selected Component helper
-  const selectedComponent = useMemo(() => {
-    return components.find(c => c.id === selectedComponentId) || components[0] || null;
-  }, [components, selectedComponentId]);
 
   // Filtered Components based on Search Query
   const searchFilteredComponents = useMemo(() => {
@@ -279,18 +299,6 @@ export default function App() {
   const myComponents = useMemo(() => {
     return searchFilteredComponents.filter(c => c.ownerId === currentUser.id);
   }, [searchFilteredComponents, currentUser.id]);
-
-  // My Library Stats
-  const myLibraryStats = useMemo(() => {
-    const myTotal = components.filter(c => c.ownerId === currentUser.id);
-    const imported = myTotal.filter(c => c.type === 'Imported').length;
-    const converted = myTotal.filter(c => c.type === 'Converted').length;
-    return {
-      imported,
-      converted,
-      total: myTotal.length,
-    };
-  }, [components, currentUser.id]);
 
   // Handle Adding Upload Files to Queue (max 5)
   const handleAddFiles = (filesList: FileList | File[]) => {
@@ -427,7 +435,6 @@ export default function App() {
     }, 1200);
   };
 
-
   // Add imported/uploaded files directly to library without converting
   const handleAddToLibraryDirectly = () => {
     if (queuedFiles.length === 0) {
@@ -479,7 +486,6 @@ export default function App() {
     if (newImportedList[0]) {
       setSelectedComponentId(newImportedList[0].id);
     }
-
 
     setQueuedFiles([]);
     alert(`Successfully added ${newImportedList.length} component(s) directly to your library.`);
@@ -538,42 +544,45 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen w-full bg-gradient-to-b ${themeGradients[currentTheme]} p-1.5 sm:p-3 md:p-6 flex flex-col items-center justify-center font-sans antialiased text-gray-900 transition-colors duration-500`}
+      className={`min-h-screen w-full bg-gradient-to-b ${themeGradients[currentTheme]} p-0 m-0 flex flex-col font-sans antialiased text-gray-900 transition-colors duration-500`}
     >
-      {/* Outer Application Window Frame */}
-      <div className="w-full max-w-[1240px] bg-white/80 backdrop-blur-md rounded-2xl border-2 border-gray-400 shadow-2xl overflow-hidden flex flex-col min-h-[660px] max-h-[96vh] sm:max-h-[93vh]">
-        {/* Full-Time Website Top Header Bar */}
-        <header className="px-2.5 sm:px-4 py-2 border-b border-gray-400 flex items-center justify-between gap-2 bg-white/95 select-none shrink-0">
-          {/* Left: Optional Sidebar Toggle (when on platform) + Logo & Version */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {currentSection === 'platform' && (
-              <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className={`p-1.5 sm:p-2 rounded-lg border transition flex items-center justify-center cursor-pointer shadow-2xs ${
-                  isSidebarOpen
-                    ? 'bg-blue-100 border-blue-400 text-blue-800'
-                    : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-800'
-                }`}
-                title={isSidebarOpen ? 'Hide sidebar (pointing down)' : 'Show sidebar (less-than)'}
-              >
-                {isSidebarOpen ? (
-                  <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 stroke-[2.5]" />
-                ) : (
-                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800 stroke-[2.5]" />
-                )}
-              </button>
-            )}
+      {/* 100% Full-Width Side-to-Side Application Container */}
+      <div className="w-full flex-1 flex flex-col min-h-screen bg-white/90 backdrop-blur-md overflow-hidden relative">
+        {/* Full-Time Website Top Header Bar - 100% width */}
+        <header className="w-full px-3 sm:px-6 py-2.5 border-b border-gray-400 flex items-center justify-between gap-3 bg-white/95 select-none shrink-0 z-20">
+          {/* Left: Mobile Sidebar Less-Than Button (<) + Logo */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Top Side Less-Than (<) Button on small mobile screens to toggle the left sidebar */}
+            <button
+              onClick={() => {
+                if (currentSection !== 'platform') {
+                  attemptNavigateToPlatform();
+                  setIsSidebarOpen(true);
+                } else {
+                  setIsSidebarOpen(!isSidebarOpen);
+                }
+              }}
+              className="lg:hidden p-1.5 sm:p-2 rounded-lg border border-gray-400 bg-white hover:bg-gray-100 text-gray-800 transition cursor-pointer shadow-xs flex items-center justify-center"
+              title={isSidebarOpen ? 'Hide sidebar (pointing downwards)' : 'Access sidebar (<)'}
+              aria-label="Toggle Sidebar Menu"
+            >
+              {isSidebarOpen ? (
+                <ChevronDown className="w-5 h-5 text-blue-700 stroke-[3]" />
+              ) : (
+                <ChevronLeft className="w-5 h-5 text-gray-900 stroke-[3]" />
+              )}
+            </button>
 
             {/* CompShare Logo & Home link */}
             <div
-              className="flex items-center gap-2 cursor-pointer"
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer group"
               onClick={() => setCurrentSection('landing')}
               title="CompShare Home Landing Page"
             >
               <img
                 src="/assets/aistudio/UI._07_efa59c02.PNG"
                 alt="CompShare Logo"
-                className="h-8 sm:h-10 object-contain"
+                className="h-8 sm:h-9 object-contain group-hover:scale-105 transition-transform"
               />
               <span className="text-xs sm:text-sm font-semibold italic text-gray-700 tracking-wide hidden sm:inline">
                 Version 1.0
@@ -581,11 +590,12 @@ export default function App() {
             </div>
           </div>
 
-          {/* Center Website Display Nav Menus: Home, Converter Platform, About, Chat */}
-          <nav className="flex items-center gap-1 sm:gap-2">
+          {/* Center Website Display Nav Menus: Home, About, Chat (Desktop md:flex) */}
+          {/* Platform button removed from top nav; accessed only via 'Continue to start converting' on Home */}
+          <nav className="hidden md:flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => setCurrentSection('landing')}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                 currentSection === 'landing'
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-gray-700 hover:bg-gray-100'
@@ -596,20 +606,8 @@ export default function App() {
             </button>
 
             <button
-              onClick={attemptNavigateToPlatform}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-                currentSection === 'platform'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span className="hidden xs:inline">Converter</span> Platform
-            </button>
-
-            <button
               onClick={() => setCurrentSection('about')}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                 currentSection === 'about'
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-gray-700 hover:bg-gray-100'
@@ -619,10 +617,9 @@ export default function App() {
               <span>About</span>
             </button>
 
-            {/* Chat moved to website display nav menu as requested */}
             <button
               onClick={() => setCurrentSection('chat')}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                 currentSection === 'chat'
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-gray-700 hover:bg-gray-100'
@@ -631,13 +628,22 @@ export default function App() {
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Chat</span>
             </button>
+
+            {currentSection === 'platform' && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300 shadow-2xs">
+                <Layers className="w-3.5 h-3.5 text-blue-700" />
+                <span>Converter Platform</span>
+              </span>
+            )}
           </nav>
 
-          {/* Right Controls: Account & Optional Details Pane Toggle (when on platform) */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Right Controls: Sign In & Mobile Hamburger Button */}
+          {/* Public admin button removed as requested */}
+          <div className="flex items-center gap-2">
+            {/* Account / Authentication Button */}
             <button
               onClick={handleOpenAccountModal}
-              className={`px-2.5 sm:px-3 py-1 text-[11px] font-bold border rounded-full transition flex items-center gap-1.5 shadow-2xs cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold border rounded-full transition flex items-center gap-1.5 shadow-2xs cursor-pointer ${
                 isAuthenticated
                   ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                   : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
@@ -648,51 +654,140 @@ export default function App() {
               <span>{isAuthenticated ? currentUser.fullName.split(' ')[0] : 'Sign In'}</span>
             </button>
 
-            {currentSection === 'platform' && (
-              <button
-                onClick={() => setIsDetailsPaneOpen(!isDetailsPaneOpen)}
-                className={`p-1.5 sm:p-2 rounded-lg border-2 transition flex items-center justify-center cursor-pointer shadow-xs ${
-                  isDetailsPaneOpen
-                    ? 'bg-blue-100 border-blue-500 text-blue-900'
-                    : 'bg-white hover:bg-gray-100 border-gray-400 text-gray-900'
-                }`}
-                title={isDetailsPaneOpen ? 'Hide component details pane (pointing downwards)' : 'Access component details pane (>)'}
-                aria-label="Toggle Component Details Pane"
-              >
-                {isDetailsPaneOpen ? (
-                  <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 stroke-[3]" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-900 stroke-[3]" />
-                )}
-              </button>
-            )}
-
+            {/* Mobile Hamburger Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-1.5 rounded-lg border border-gray-400 bg-white hover:bg-gray-100 text-gray-800 transition cursor-pointer shadow-xs"
+              aria-label="Toggle navigation menu"
+              title="Open Navigation Menu"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </header>
 
-        {/* Website Page Body Router */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* 1. Website Landing Page ('Home') with Welcoming Context & 'Continue to start converting' button */}
-          {currentSection === 'landing' && (
-            <LandingPageView
-              onStartConverting={attemptNavigateToPlatform}
-              onExploreAbout={() => setCurrentSection('about')}
-              onOpenChat={() => setCurrentSection('chat')}
-              stats={stats}
+        {/* Secret Admin Passcode Notification Banner */}
+        {adminToast && (
+          <div
+            className={`w-full py-2 px-4 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-sm animate-fadeIn ${
+              adminToast.isSuccess
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-800 text-gray-100'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4 text-white" />
+            <span>{adminToast.message}</span>
+          </div>
+        )}
+
+        {/* Mobile Hamburger Menu Overlay & Drawer */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex flex-col">
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+              onClick={() => setIsMobileMenuOpen(false)}
             />
+            <div className="relative z-50 bg-white border-b-2 border-gray-400 shadow-2xl p-4 space-y-4 animate-fadeIn max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <img src="/assets/aistudio/UI._07_efa59c02.PNG" alt="CompShare" className="h-7" />
+                  <span className="text-sm font-bold text-gray-900">CompShare Navigation</span>
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Navigation Links */}
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => {
+                    setCurrentSection('landing');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left cursor-pointer ${
+                    currentSection === 'landing' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  <HomeIcon className="w-4 h-4" />
+                  <span>Home (Welcome)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCurrentSection('about');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left cursor-pointer ${
+                    currentSection === 'about' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  <InfoIcon className="w-4 h-4" />
+                  <span>About Platform &amp; Services</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCurrentSection('chat');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-left cursor-pointer ${
+                    currentSection === 'chat' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Engineer Community Chat</span>
+                </button>
+              </div>
+
+              {/* Account Status / Sign In */}
+              <div className="flex items-center justify-between pt-3 border-t border-gray-200 text-xs">
+                <span className="text-gray-600">
+                  {isAuthenticated ? `Signed in as ${currentUser.fullName}` : 'Guest session'}
+                </span>
+                <button
+                  onClick={() => {
+                    handleOpenAccountModal();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg font-bold"
+                >
+                  {isAuthenticated ? 'Manage Account' : 'Sign In'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Website Page Body Router - 100% full width */}
+        <div className="w-full flex-1 flex flex-col overflow-hidden relative">
+          {/* 1. Website Landing Page ('Home') */}
+          {currentSection === 'landing' && (
+            <div className="w-full flex-1 flex flex-col overflow-y-auto">
+              <LandingPageView
+                onStartConverting={attemptNavigateToPlatform}
+                onExploreAbout={() => setCurrentSection('about')}
+                onOpenChat={() => setCurrentSection('chat')}
+                stats={stats}
+              />
+            </div>
           )}
 
           {/* 2. Full details of the platform and services ('About') */}
           {currentSection === 'about' && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              <div className="max-w-4xl mx-auto space-y-4">
+            <div className="w-full flex-1 overflow-y-auto p-4 sm:p-8">
+              <div className="w-full max-w-6xl mx-auto space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">About CompShare Platform &amp; Services</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">About CompShare Platform &amp; Services</h2>
                   <button
                     onClick={attemptNavigateToPlatform}
-                    className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-bold transition shadow-xs cursor-pointer"
+                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5"
                   >
-                    Open Converter Platform →
+                    <span>Open Converter Platform</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 <AboutView />
@@ -700,19 +795,21 @@ export default function App() {
             </div>
           )}
 
-          {/* 3. Community Discussion Room ('Chat') moved to website display nav menu */}
+          {/* 3. Community Discussion Room ('Chat') */}
           {currentSection === 'chat' && (
-            <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col max-w-4xl mx-auto w-full">
+            <div className="w-full flex-1 overflow-hidden p-2 sm:p-4 flex flex-col max-w-5xl mx-auto">
               <div className="flex items-center justify-between pb-2 border-b border-gray-300 mb-2">
                 <div>
                   <h3 className="text-sm font-bold text-gray-900">CompShare Engineer Community Chat</h3>
-                  <p className="text-xs text-gray-500">Ask questions, request specific component conversions, or discuss footprints.</p>
+                  <p className="text-xs text-gray-500">
+                    Ask questions, request specific component conversions, or discuss footprints.
+                  </p>
                 </div>
                 <button
-                  onClick={attemptNavigateToPlatform}
-                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-full text-xs font-semibold text-gray-700 transition cursor-pointer"
+                  onClick={() => setCurrentSection('landing')}
+                  className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-full text-xs font-semibold text-gray-700 transition cursor-pointer"
                 >
-                  Back to Platform
+                  Back to Home
                 </button>
               </div>
               <ChatView
@@ -724,18 +821,18 @@ export default function App() {
             </div>
           )}
 
-
-          {/* 4. Ready-Made Converting Platform */}
+          {/* 4. Ready-Made Converting Platform - 100% full width with Left Sidebar */}
           {currentSection === 'platform' && (
-            <div className="flex-1 flex overflow-hidden relative">
-              {/* Left Selection Pane - Desktop docked or Mobile overlay */}
+            <div className="w-full flex-1 flex overflow-hidden relative">
+              {/* Left Sidebar Pane with Option List (Docked on desktop, slide-out overlay on mobile) */}
               {isSidebarOpen && (
                 <>
+                  {/* Mobile backdrop */}
                   <div
                     className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-2xs transition-opacity"
                     onClick={() => setIsSidebarOpen(false)}
                   />
-                  <div className="z-40 fixed lg:static inset-y-0 left-0 h-full shadow-xl lg:shadow-none animate-fadeIn flex">
+                  <div className="z-40 fixed lg:static inset-y-0 left-0 h-full shadow-xl lg:shadow-none animate-fadeIn flex shrink-0">
                     <Sidebar
                       currentTab={currentTab}
                       onSelectTab={tab => {
@@ -753,20 +850,20 @@ export default function App() {
                 </>
               )}
 
-              {/* Main Middle Screen */}
+              {/* Main Middle Screen Workspace (Fills 100% remaining width side-to-side) */}
               <main className="flex-1 flex flex-col overflow-hidden bg-transparent w-full min-w-0">
-                {/* Search Bar on Top */}
-                <div className="px-3 sm:px-4 py-2 border-b border-gray-300 bg-white/60">
-                  <div className="relative w-full max-w-2xl mx-auto flex items-center">
+                {/* Search Bar on Top with secret passcode listener */}
+                <div className="px-3 sm:px-6 py-2.5 border-b border-gray-300 bg-white/70 backdrop-blur-xs">
+                  <div className="relative w-full max-w-3xl mx-auto flex items-center">
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      placeholder="Search components, packages, or formats ..."
-                      className="w-full pl-4 pr-16 py-1.5 bg-white border border-gray-400 rounded-full text-xs sm:text-sm text-gray-800 shadow-xs focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-500"
+                      onChange={e => handleSearchChange(e.target.value)}
+                      placeholder="Search components, packages, or formats... (type 'compshare.admin' to unlock admin)"
+                      className="w-full pl-4 pr-16 py-2 bg-white border border-gray-400 rounded-full text-xs sm:text-sm text-gray-800 shadow-xs focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-500"
                     />
 
-                    <div className="absolute right-3 flex items-center gap-1.5">
+                    <div className="absolute right-3.5 flex items-center gap-1.5">
                       {searchQuery && (
                         <button
                           onClick={() => setSearchQuery('')}
@@ -788,7 +885,10 @@ export default function App() {
                 </div>
 
                 {/* Top Convert Bar */}
-                {(currentTab === 'new' || currentTab === 'myLibrary' || currentTab === 'allLibraries' || currentTab === 'recents') && (
+                {(currentTab === 'new' ||
+                  currentTab === 'myLibrary' ||
+                  currentTab === 'allLibraries' ||
+                  currentTab === 'recents') && (
                   <TopConvertBar
                     activeTypeFilter={activeTypeFilter}
                     onChangeTypeFilter={setActiveTypeFilter}
@@ -803,7 +903,7 @@ export default function App() {
                 )}
 
                 {/* Dynamic View Router for Center Workspace */}
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden w-full">
                   {currentTab === 'new' && (
                     <NewConvertView
                       queuedFiles={queuedFiles}
@@ -832,6 +932,7 @@ export default function App() {
                     <LibraryView
                       title="My Library"
                       isMyLibrary={true}
+                      isAdmin={currentUser.role === 'admin'}
                       components={myComponents}
                       selectedComponentId={selectedComponentId}
                       onSelectComponent={comp => setSelectedComponentId(comp.id)}
@@ -846,6 +947,7 @@ export default function App() {
                     <LibraryView
                       title="All Libraries"
                       isMyLibrary={false}
+                      isAdmin={currentUser.role === 'admin'}
                       components={searchFilteredComponents}
                       selectedComponentId={selectedComponentId}
                       onSelectComponent={comp => setSelectedComponentId(comp.id)}
@@ -883,45 +985,13 @@ export default function App() {
                       }}
                     />
                   )}
-
-                  {currentTab === 'about' && <AboutView />}
                 </div>
               </main>
-
-              {/* Right Side Docked '>' Button for accessing component details pane when closed */}
-              {!isDetailsPaneOpen && (
-                <button
-                  onClick={() => setIsDetailsPaneOpen(true)}
-                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 bg-white/95 hover:bg-blue-50 border-l-2 border-t-2 border-b-2 border-gray-400 hover:border-blue-500 text-gray-800 hover:text-blue-700 py-3 px-1.5 rounded-l-xl shadow-lg items-center justify-center cursor-pointer transition transform hover:-translate-x-0.5"
-                  title="Access component details pane (>)"
-                >
-                  <ChevronRight className="w-5 h-5 text-gray-800 hover:text-blue-700 stroke-[3]" />
-                </button>
-              )}
-
-              {/* Right Side Component Details Pane */}
-              {isDetailsPaneOpen && (
-
-                <>
-                  <div
-                    className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-2xs transition-opacity"
-                    onClick={() => setIsDetailsPaneOpen(false)}
-                  />
-                  <div className="z-40 fixed lg:static inset-y-0 right-0 h-full shadow-xl lg:shadow-none animate-fadeIn flex">
-                    <ComponentDetailsPane
-                      selectedComponent={selectedComponent}
-                      stats={stats}
-                      myLibraryStats={myLibraryStats}
-                      onCloseMobile={() => setIsDetailsPaneOpen(false)}
-                    />
-                  </div>
-                </>
-              )}
             </div>
           )}
         </div>
 
-        {/* Full-Time Website Footer on the Bottom (shown across website & platform) */}
+        {/* Full-Time Website Footer on the Bottom - 100% width */}
         <WebsiteFooter onNavigate={setCurrentSection} isOnline={isOnline} />
       </div>
 
@@ -933,13 +1003,14 @@ export default function App() {
         />
       )}
 
-      {/* Manage Component Modal for My Library */}
+      {/* Manage Component Modal for editing component details, thumbnail, datasheet, and AI Bot */}
       {managingComponent && (
         <ManageComponentModal
           component={managingComponent}
           isOpen={Boolean(managingComponent)}
           onClose={() => setManagingComponent(null)}
           onSave={handleSaveManagedComponent}
+          isAdmin={currentUser.role === 'admin'}
         />
       )}
 

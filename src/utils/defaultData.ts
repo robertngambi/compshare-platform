@@ -3,7 +3,7 @@ import { generatePinsForPackage, generatePadsForPackage } from './converterEngin
 
 export const INITIAL_USER: UserProfile = {
   id: 'usr_john_doe',
-  fullName: 'John Doe',
+  fullName: 'John Doe (Admin)',
   email: 'robertngambi303@gmail.com',
   phoneNumber: '+1 (555) 382-9471',
   companyName: 'Nexus Circuit Technologies',
@@ -11,7 +11,9 @@ export const INITIAL_USER: UserProfile = {
   avatarUrl: '',
   lastLoginTimestamp: Date.now(),
   provider: 'google',
+  role: 'admin',
 };
+
 
 export const INITIAL_STATS: PlatformStats = {
   subscribers: 12440,

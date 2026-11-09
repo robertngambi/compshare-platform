@@ -72,7 +72,9 @@ export interface UserProfile {
   avatarUrl: string;
   lastLoginTimestamp: number;
   provider: 'email' | 'google' | 'apple';
+  role?: 'admin' | 'user';
 }
+
 
 export interface ChatReaction {
   type: 'heart' | 'reply' | 'thumbs';

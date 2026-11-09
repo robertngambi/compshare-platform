@@ -2,7 +2,7 @@ import React from 'react';
 import { User, ShieldCheck, X } from 'lucide-react';
 import { UserProfile, ThemeBottomColor } from '../types';
 
-export type NavTab = 'profile' | 'myLibrary' | 'recents' | 'new' | 'allLibraries' | 'settings' | 'about' | 'chat';
+export type NavTab = 'profile' | 'myLibrary' | 'recents' | 'new' | 'allLibraries' | 'settings' | 'chat';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -32,8 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'new', label: 'New' },
     { id: 'allLibraries', label: 'All libraries' },
     { id: 'settings', label: 'Settings' },
-    { id: 'about', label: 'About' },
   ];
+
 
   const themes: { id: ThemeBottomColor; name: string; bgClass: string; hex: string }[] = [
     { id: 'blue', name: 'Light Blue', bgClass: 'bg-sky-400', hex: '#7fb7e8' },
@@ -68,12 +68,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-bold text-gray-900 truncate group-hover:text-blue-700 transition">
-                {currentUser.fullName}
-              </h4>
-              <span className="text-[10px] text-gray-500 block truncate">Online • 7-day session</span>
+              <div className="flex items-center gap-1.5">
+                <h4 className="text-xs sm:text-sm font-bold text-gray-900 truncate group-hover:text-blue-700 transition">
+                  {currentUser.fullName}
+                </h4>
+                {currentUser.role === 'admin' && (
+                  <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded border border-amber-300">
+                    ADMIN
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-gray-500 block truncate">
+                {currentUser.role === 'admin' ? 'Administrator • Full Access' : 'Online • 7-day session'}
+              </span>
             </div>
           </div>
+
 
           {onCloseMobile && (
             <button

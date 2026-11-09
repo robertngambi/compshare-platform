@@ -113,24 +113,37 @@ export function generatePinsForPackage(pkg: string, name: string): PinDefinition
 export function generatePadsForPackage(pkg: string): PadDefinition[] {
   if (pkg === 'SOT-23-6') {
     return [
-      { number: 1, x: -1.3, y: -0.95, width: 1.0, height: 0.6, shape: 'rect', type: 'smd' },
-      { number: 2, x: -1.3, y: 0.0, width: 1.0, height: 0.6, shape: 'rect', type: 'smd' },
-      { number: 3, x: -1.3, y: 0.95, width: 1.0, height: 0.6, shape: 'rect', type: 'smd' },
-      { number: 4, x: 1.3, y: 0.95, width: 1.0, height: 0.6, shape: 'rect', type: 'smd' },
-      { number: 5, x: 1.3, y: 0.0, width: 1.0, height: 0.6, shape: 'rect', type: 'smd' },
-      { number: 6, x: 1.3, y: -0.95, width: 1.0, height: 0.6, shape: 'rect', type: 'smd' },
+      { number: 1, x: -1.35, y: -0.95, width: 1.05, height: 0.6, shape: 'rect', type: 'smd' },
+      { number: 2, x: -1.35, y: 0.0, width: 1.05, height: 0.6, shape: 'rect', type: 'smd' },
+      { number: 3, x: -1.35, y: 0.95, width: 1.05, height: 0.6, shape: 'rect', type: 'smd' },
+      { number: 4, x: 1.35, y: 0.95, width: 1.05, height: 0.6, shape: 'rect', type: 'smd' },
+      { number: 5, x: 1.35, y: 0.0, width: 1.05, height: 0.6, shape: 'rect', type: 'smd' },
+      { number: 6, x: 1.35, y: -0.95, width: 1.05, height: 0.6, shape: 'rect', type: 'smd' },
     ];
   }
-  // Default 8-pin SOIC
+  if (pkg === 'DIP-8') {
+    // 2.54mm pitch through-hole, 7.62mm (0.3 inch) row spacing
+    return [
+      { number: 1, x: -3.81, y: -3.81, width: 1.6, height: 1.6, shape: 'round', type: 'tht' },
+      { number: 2, x: -3.81, y: -1.27, width: 1.6, height: 1.6, shape: 'round', type: 'tht' },
+      { number: 3, x: -3.81, y: 1.27, width: 1.6, height: 1.6, shape: 'round', type: 'tht' },
+      { number: 4, x: -3.81, y: 3.81, width: 1.6, height: 1.6, shape: 'round', type: 'tht' },
+      { number: 5, x: 3.81, y: 3.81, width: 1.6, height: 1.6, shape: 'round', type: 'tht' },
+      { number: 6, x: 3.81, y: 1.27, width: 1.6, height: 1.6, shape: 'round', type: 'tht' },
+      { number: 7, x: 3.81, y: -1.27, width: 1.6, height: 1.6, shape: 'round', type: 'tht' },
+      { number: 8, x: 3.81, y: -3.81, width: 1.6, height: 1.6, shape: 'round', type: 'tht' },
+    ];
+  }
+  // Default 8-pin SOIC (1.27mm pitch, 5.4mm span)
   return [
-    { number: 1, x: -2.6, y: -1.905, width: 1.5, height: 0.65, shape: 'rect', type: 'smd' },
-    { number: 2, x: -2.6, y: -0.635, width: 1.5, height: 0.65, shape: 'rect', type: 'smd' },
-    { number: 3, x: -2.6, y: 0.635, width: 1.5, height: 0.65, shape: 'rect', type: 'smd' },
-    { number: 4, x: -2.6, y: 1.905, width: 1.5, height: 0.65, shape: 'rect', type: 'smd' },
-    { number: 5, x: 2.6, y: 1.905, width: 1.5, height: 0.65, shape: 'rect', type: 'smd' },
-    { number: 6, x: 2.6, y: 0.635, width: 1.5, height: 0.65, shape: 'rect', type: 'smd' },
-    { number: 7, x: 2.6, y: -0.635, width: 1.5, height: 0.65, shape: 'rect', type: 'smd' },
-    { number: 8, x: 2.6, y: -1.905, width: 1.5, height: 0.65, shape: 'rect', type: 'smd' },
+    { number: 1, x: -2.7, y: -1.905, width: 1.55, height: 0.65, shape: 'rect', type: 'smd' },
+    { number: 2, x: -2.7, y: -0.635, width: 1.55, height: 0.65, shape: 'rect', type: 'smd' },
+    { number: 3, x: -2.7, y: 0.635, width: 1.55, height: 0.65, shape: 'rect', type: 'smd' },
+    { number: 4, x: -2.7, y: 1.905, width: 1.55, height: 0.65, shape: 'rect', type: 'smd' },
+    { number: 5, x: 2.7, y: 1.905, width: 1.55, height: 0.65, shape: 'rect', type: 'smd' },
+    { number: 6, x: 2.7, y: 0.635, width: 1.55, height: 0.65, shape: 'rect', type: 'smd' },
+    { number: 7, x: 2.7, y: -0.635, width: 1.55, height: 0.65, shape: 'rect', type: 'smd' },
+    { number: 8, x: 2.7, y: -1.905, width: 1.55, height: 0.65, shape: 'rect', type: 'smd' },
   ];
 }
 
